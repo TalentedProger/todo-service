@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:todo_test;DB_CLOSE_DELAY=-1")
@@ -45,7 +46,9 @@ class ApiIntegrationTest {
         long taskId = json.readTree(created.getResponse().getContentAsString()).get("id").asLong();
 
         mvc.perform(get("/api/v1/tasks"))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+            .andExpect(status().isOk())
+            .andExpect(header().string("Content-Type", "application/json;charset=UTF-8"))
+            .andExpect(jsonPath("$.length()").value(1));
         mvc.perform(get("/api/v1/tasks/{id}", taskId))
             .andExpect(status().isOk()).andExpect(jsonPath("$.title").value("Study Java"));
         mvc.perform(get("/api/v1/tasks/{id}/assignees", taskId))
