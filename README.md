@@ -18,6 +18,88 @@ Linux/macOS:
 
 Для запуска нужен JDK 21 и интернет при первой сборке. Устанавливать Maven отдельно не нужно. Остановить сервер: `Ctrl+C`. Проверка: `.\mvnw.cmd test` (Linux/macOS: `./mvnw test`).
 
+Если порт `8080` уже занят, сервер можно запустить на другом порту:
+
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--server.port=8081"
+```
+
+В таком случае в командах ниже нужно заменить `localhost:8080` на `localhost:8081`.
+
+## Куда вводить JSON
+
+JSON отправляется на работающий сервер как тело HTTP-запроса. Удобнее всего открыть два окна PowerShell:
+
+1. В первом окне перейти в папку проекта и запустить сервер:
+
+   ```powershell
+   .\mvnw.cmd spring-boot:run
+   ```
+
+2. Не закрывая сервер, открыть второе окно PowerShell, перейти в эту же папку и выполнять команды ниже.
+
+Создание пользователя:
+
+```powershell
+$userJson = @{
+    firstName = "Иван"
+    lastName  = "Иванов"
+    email     = "ivan@example.com"
+    age       = 25
+} | ConvertTo-Json
+
+$user = Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://localhost:8080/api/v1/users" `
+    -ContentType "application/json; charset=utf-8" `
+    -Body $userJson
+
+$user
+```
+
+Ответ будет содержать созданного пользователя и его `id`. Переменная `$user.id` ниже позволяет сразу назначить этого пользователя на новую задачу:
+
+```powershell
+$taskJson = @{
+    title       = "Выучить Java"
+    description = "Сделать учебный проект"
+    status      = "TODO"
+    assigneeIds = @($user.id)
+} | ConvertTo-Json
+
+$task = Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://localhost:8080/api/v1/tasks" `
+    -ContentType "application/json; charset=utf-8" `
+    -Body $taskJson
+
+$task
+```
+
+Получение всех задач и изменение созданной задачи:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri "http://localhost:8080/api/v1/tasks"
+
+$changes = @{ status = "DONE" } | ConvertTo-Json
+Invoke-RestMethod `
+    -Method Patch `
+    -Uri "http://localhost:8080/api/v1/tasks/$($task.id)" `
+    -ContentType "application/json; charset=utf-8" `
+    -Body $changes
+```
+
+Удаление задачи и пользователя:
+
+```powershell
+Invoke-RestMethod -Method Delete -Uri "http://localhost:8080/api/v1/tasks/$($task.id)"
+Invoke-RestMethod -Method Delete -Uri "http://localhost:8080/api/v1/users/$($user.id)"
+```
+
+В Postman нужно выбрать метод (`POST`, `PATCH` и так далее), указать URL, открыть `Body` → `raw` → `JSON`, вставить JSON и нажать `Send`. Для `GET` и `DELETE` тело запроса не требуется.
+
+Подробное назначение всех файлов описано в [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
+
 ## Маршруты
 
 | Метод | Путь | Действие |
