@@ -1,0 +1,7 @@
+target/
+data/
+todo-data.*
+build-test.log
+.idea/
+*.iml
+*.log
